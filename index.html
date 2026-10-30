@@ -773,7 +773,7 @@ input, textarea{font-size:16px!important}
   $('brand').innerHTML = logo(30) + '<span>martaedhyx</span>';
   render();
   setInterval(updateGreeting, 12000);
-  if (!cfg.key) openSettings();
+  // Pengaturan API tidak dibuka otomatis agar sapaan langsung terlihat saat halaman dimuat.
 })();
 </script>
 </body>
