@@ -399,10 +399,22 @@ input, textarea{font-size:16px!important}
     var t = userText(m); if (t) d.appendChild(el('div','',t));
     wrap.appendChild(d);
   }
-  function addBot(m){
+  function addBot(m, typewrite){
     var d = el('div','msg bot'), all = '';
     m.parts.forEach(function(p){
-      if (p.text){ all += p.text; var s = el('div'); s.innerHTML = md(p.text); d.appendChild(s); }
+      if (p.text){
+        all += p.text;
+        var s = el('div'); d.appendChild(s);
+        if (typewrite){
+          var raw = p.text, pos = 0;
+          (function reveal(){
+            pos = Math.min(pos + 12, raw.length);
+            s.textContent = raw.slice(0, pos);
+            if (pos < raw.length) setTimeout(reveal, 16);
+            else s.innerHTML = md(raw);
+          })();
+        } else s.innerHTML = md(p.text);
+      }
       else if (p.inlineData){
         var src = 'data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data;
         var im = el('img','gen'); im.src = src; im.alt = 'Gambar buatan bot'; d.appendChild(im);
@@ -489,7 +501,7 @@ input, textarea{font-size:16px!important}
     greeting.textContent = next;
   }
 
-  function render(){
+  function render(animateLastBot){
     var c = getChat();
     $('modelLabel').textContent = '';
     $('title').textContent = c && c.msgs.length ? '' : 'Chat baru';
@@ -501,15 +513,19 @@ input, textarea{font-size:16px!important}
       wrap.appendChild(h);
     } else {
       var firstQuestionHidden = false;
-      c.msgs.forEach(function(m){
+      c.msgs.forEach(function(m, i){
         if (m.role === 'user'){
           if (!firstQuestionHidden){ firstQuestionHidden = true; return; }
           addUser(m);
-        } else addBot(m);
+        } else addBot(m, !!animateLastBot && i === c.msgs.length - 1);
       });
     }
     renderSide();
-    chatEl.scrollTop = chatEl.scrollHeight;
+    if (animateLastBot && wrap.lastElementChild && wrap.lastElementChild.classList.contains('bot')){
+      var answerTop = wrap.lastElementChild.getBoundingClientRect().top;
+      var chatTop = chatEl.getBoundingClientRect().top;
+      chatEl.scrollTop += answerTop - chatTop;
+    } else chatEl.scrollTop = chatEl.scrollHeight;
   }
 
   /* ---------- lampiran ---------- */
@@ -688,7 +704,7 @@ input, textarea{font-size:16px!important}
         });
         c.msgs.push({ role:'model', parts:keep, src:src });
         Eyes.unlock(); Eyes.aha(); Eyes.pulse('write', 2600);
-        persist(); render();
+        persist(); render(true);
       }
     } catch(err){
       fail('Tidak bisa terhubung. Periksa koneksi internet kamu.');
