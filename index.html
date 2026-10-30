@@ -68,7 +68,7 @@ main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;height:1
 .msg.bot li{margin:.2em 0}
 .msg.bot pre{background:var(--code);border:1px solid var(--line);padding:12px;border-radius:10px;overflow-x:auto;margin:.8em 0;font:13.5px/1.5 ui-monospace,Menlo,Consolas,monospace}
 .msg.bot code{background:var(--code);padding:1px 5px;border-radius:5px;font:.88em ui-monospace,Menlo,Consolas,monospace}
-.msg.bot pre code{background:none;padding:0;font-size:inherit}
+.msg.bot pre code{background:none;padding:0;font-size:inherit}.msg.bot a.md-link{color:#eee;text-decoration-line:underline;text-decoration-style:dotted;text-decoration-color:#aaa;text-underline-offset:4px;overflow-wrap:anywhere}.msg.bot .site-icon{width:14px;height:14px;object-fit:contain;vertical-align:-2px;margin-right:5px;border-radius:3px}.msg.bot .task{list-style:none;margin-left:-1.4em}.msg.bot .task input{accent-color:#22c55e;width:14px;height:14px;vertical-align:-2px;margin-right:7px}.msg.bot pre{position:relative;padding:38px 12px 12px;background:#101318;border:1px solid #30343b;border-radius:10px;overflow-x:auto}.msg.bot .code-lang{position:absolute;top:9px;left:12px;color:#aeb7c4;font-size:11px}.msg.bot .code-copy{position:absolute;top:5px;right:7px;border:1px solid #424852;border-radius:6px;padding:3px 7px;font-size:11px}
 .msg.err{align-self:stretch;color:var(--ink);border:1px solid var(--err);border-radius:12px;padding:10px 14px;font-size:15px}
 .copy{color:var(--muted);font-size:13px;padding:2px 8px;margin-left:-8px;border-radius:8px}
 .copy:hover{background:var(--hover)}
@@ -360,29 +360,39 @@ input, textarea{font-size:16px!important}
   /* ---------- tampilan teks ---------- */
   function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function inline(s){
-    return s.replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
+    return s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,function(_,label,url){
+      var host=''; try{host=new URL(url).hostname;}catch(e){}
+      var ico=host?'<img class="site-icon" src="https://www.google.com/s2/favicons?domain='+encodeURIComponent(host)+'&amp;sz=32" alt="" onerror="this.style.display=\'none\'">':'';
+      return '<a class="md-link" href="'+url+'" target="_blank" rel="noopener noreferrer">'+ico+label+'</a>';
+    }).replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>');
   }
   function blocks(t){
-    var out = '', mode = '', lines = t.split('\n');
-    function close(){ if (mode){ out += '</' + mode + '>'; mode = ''; } }
+    var out='',mode='',lines=t.split('\n');
+    function close(){if(mode){out+='</'+mode+'>';mode='';}}
     lines.forEach(function(line){
       var m;
-      if ((m = line.match(/^\s*[-*]\s+(.*)/))){ if (mode !== 'ul'){ close(); out += '<ul>'; mode = 'ul'; } out += '<li>' + inline(m[1]) + '</li>'; }
-      else if ((m = line.match(/^\s*\d+[.)]\s+(.*)/))){ if (mode !== 'ol'){ close(); out += '<ol>'; mode = 'ol'; } out += '<li>' + inline(m[1]) + '</li>'; }
-      else if ((m = line.match(/^#{1,4}\s+(.*)/))){ close(); out += '<h3>' + inline(m[1]) + '</h3>'; }
-      else if (!line.trim()){ close(); }
-      else { close(); out += '<p>' + inline(line) + '</p>'; }
-    });
-    close();
-    return out;
+      if((m=line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.*)/))){close();var done=m[1].toLowerCase()==='x';out+='<ul><li class="task"><input type="checkbox" disabled '+(done?'checked':'')+'>'+inline(m[2])+'</li></ul>';}
+      else if((m=line.match(/^\s*[-*]\s+(.*)/))){if(mode!=='ul'){close();out+='<ul>';mode='ul';}out+='<li>'+inline(m[1])+'</li>';}
+      else if((m=line.match(/^\s*\d+[.)]\s+(.*)/))){if(mode!=='ol'){close();out+='<ol>';mode='ol';}out+='<li>'+inline(m[1])+'</li>';}
+      else if((m=line.match(/^#{1,4}\s+(.*)/))){close();out+='<h3>'+inline(m[1])+'</h3>';}
+      else if(!line.trim()){close();}
+      else{close();out+='<p>'+inline(line)+'</p>';}
+    });close();return out;
   }
   function md(src){
-    var parts = esc(src).split('```'), out = '';
-    parts.forEach(function(p, i){
-      if (i % 2) out += '<pre><code>' + p.replace(/^\w*\n/,'').replace(/\n$/,'') + '</code></pre>';
-      else out += blocks(p);
-    });
-    return out;
+    var parts=esc(src).split('```'),out='';
+    parts.forEach(function(p,i){
+      if(i%2){
+        var m=p.match(/^(\w+)?\n/),lang=m&&m[1]?m[1]:'HTML',code=m?p.slice(m[0].length):p;
+        out+='<pre><span class="code-lang">'+lang+'</span><button type="button" class="code-copy">Salin</button><code>'+code.replace(/\n$/,'')+'</code></pre>';
+      }else out+=blocks(p);
+    });return out;
+  }
+  function enhanceMarkdown(root){
+    root.querySelectorAll('.code-copy').forEach(function(b){b.addEventListener('click',function(){
+      var c=b.parentNode.querySelector('code'),v=c?c.textContent:'';
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(v).then(function(){b.textContent='Tersalin';setTimeout(function(){b.textContent='Salin';},1300);});
+    });});
   }
 
   /* ---------- render ---------- */
@@ -411,9 +421,9 @@ input, textarea{font-size:16px!important}
             pos = Math.min(pos + 12, raw.length);
             s.textContent = raw.slice(0, pos);
             if (pos < raw.length) setTimeout(reveal, 16);
-            else s.innerHTML = md(raw);
+            else { s.innerHTML = md(raw); enhanceMarkdown(s); }
           })();
-        } else s.innerHTML = md(p.text);
+        } else { s.innerHTML = md(p.text); enhanceMarkdown(s); }
       }
       else if (p.inlineData){
         var src = 'data:' + p.inlineData.mimeType + ';base64,' + p.inlineData.data;
