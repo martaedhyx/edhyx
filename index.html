@@ -64,7 +64,7 @@ main{flex:1;min-width:0;display:flex;flex-direction:column;height:100%}
 .msg.err{align-self:stretch;color:var(--ink);border:1px solid var(--err);border-radius:12px;padding:10px 14px;font-size:15px}
 .copy{color:var(--muted);font-size:13px;padding:2px 8px;margin-left:-8px;border-radius:8px}
 .copy:hover{background:var(--hover)}
-.typing{color:var(--muted);font-style:italic}
+.typing{color:var(--muted);font-style:italic;font-size:12px}
 @media (prefers-reduced-motion: no-preference){ .typing{animation:pulse 1.5s ease-in-out infinite} @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}} }
 
 /* Input */
@@ -401,18 +401,21 @@ dialog input,dialog textarea{width:100%;background:var(--bg);color:var(--ink);bo
       d.appendChild(sd);
     }
     if (all){
-      var b = el('button','copy','Salin'); b.type = 'button';
+      var copyIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h2"/></svg>';
+      var checkIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
+      var micIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+      var b = el('button','copy'); b.type = 'button'; b.innerHTML = copyIcon; b.title = 'Salin'; b.setAttribute('aria-label','Salin jawaban');
       b.addEventListener('click', function(){
-        try { navigator.clipboard.writeText(all).then(function(){ b.textContent = 'Tersalin'; setTimeout(function(){ b.textContent = 'Salin'; }, 1500); }); } catch(e){}
+        try { navigator.clipboard.writeText(all).then(function(){ b.innerHTML = checkIcon; b.title = 'Tersalin'; setTimeout(function(){ b.innerHTML = copyIcon; b.title = 'Salin'; }, 1500); }); } catch(e){}
       });
       d.appendChild(b);
       if (window.speechSynthesis){
-        var sp = el('button','copy','Dengar'); sp.type = 'button';
+        var sp = el('button','copy'); sp.type = 'button'; sp.innerHTML = micIcon; sp.title = 'Dengarkan jawaban'; sp.setAttribute('aria-label','Dengarkan jawaban');
         sp.addEventListener('click', function(){
-          if (speechSynthesis.speaking){ speechSynthesis.cancel(); sp.textContent = 'Dengar'; return; }
+          if (speechSynthesis.speaking){ speechSynthesis.cancel(); sp.title = 'Dengarkan jawaban'; return; }
           var u = new SpeechSynthesisUtterance(all.replace(/[`*#]/g,'')); u.lang = 'id-ID';
-          u.onend = function(){ sp.textContent = 'Dengar'; };
-          sp.textContent = 'Berhenti'; speechSynthesis.speak(u);
+          u.onend = function(){ sp.title = 'Dengarkan jawaban'; };
+          sp.title = 'Berhenti mendengarkan'; speechSynthesis.speak(u);
         });
         d.appendChild(sp);
       }
