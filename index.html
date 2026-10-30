@@ -450,6 +450,18 @@ dialog input,dialog textarea{width:100%;background:var(--bg);color:var(--ink);bo
     });
   }
 
+  function updateGreeting(){
+    var hourText = new Intl.DateTimeFormat('en-GB', {
+      timeZone:'Asia/Jakarta', hour:'2-digit', hourCycle:'h23'
+    }).format(new Date());
+    var hour = Number(hourText);
+    var period = hour >= 4 && hour < 11 ? 'Pagi'
+      : hour >= 11 && hour < 15 ? 'Siang'
+      : hour >= 15 && hour < 18 ? 'Sore' : 'Malam';
+    var greeting = $('greeting');
+    if (greeting) greeting.textContent = 'Halo, Selamat ' + period;
+  }
+
   function render(){
     var c = getChat();
     $('modelLabel').textContent = '';
@@ -457,7 +469,8 @@ dialog input,dialog textarea{width:100%;background:var(--bg);color:var(--ink);bo
     wrap.innerHTML = '';
     if (!c || !c.msgs.length){
       var h = el('div','hello');
-      h.innerHTML = logo(36) + '<h1>Halo, ada yang bisa dibantu?</h1>';
+      h.innerHTML = logo(36) + '<h1 id="greeting"></h1>';
+      updateGreeting();
       wrap.appendChild(h);
     } else {
       c.msgs.forEach(function(m){ if (m.role === 'user') addUser(m); else addBot(m); });
@@ -726,6 +739,7 @@ dialog input,dialog textarea{width:100%;background:var(--bg);color:var(--ink);bo
 
   $('brand').innerHTML = logo(30) + '<span>martaedhyx</span>';
   render();
+  setInterval(updateGreeting, 60000);
   if (!cfg.key) openSettings();
 })();
 </script>
