@@ -136,6 +136,9 @@ dialog input,dialog textarea{width:100%;background:var(--bg);color:var(--ink);bo
   #menuBtn{display:block}
 }
 @media (prefers-reduced-motion: reduce){ #side{transition:none} }
+
+/* Tipografi ringkas dan seragam */
+*, *::before, *::after{font-family:var(--sans)!important;font-size:14px!important}
 </style>
 </head>
 <body>
@@ -622,7 +625,7 @@ dialog input,dialog textarea{width:100%;background:var(--bg);color:var(--ink);bo
       if (cur[1] && pi < ph.length - 1){ pi++; stTimer = setTimeout(showPhase, cur[1]); }
     })();
     chatEl.scrollTop = chatEl.scrollHeight;
-
+    var sysText = cfg.sys + styleGuide + (locOn && loc ? '\nLokasi GPS pengguna saat ini: ' + loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5) + ' (akurasi sekitar ' + loc.acc + ' m). Pakai ini bila pertanyaan menyangkut tempat atau jarak.' : '');
     if (locOn && !asImage){ var r2 = await getLoc(); if (r2.lat !== undefined) loc = r2; }
     var model = asImage ? cfg.imgmodel : cfg.model;
     var sysText = cfg.sys + (locOn && loc ? '\nLokasi GPS pengguna saat ini: ' + loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5) + ' (akurasi sekitar ' + loc.acc + ' m). Pakai ini bila pertanyaan menyangkut tempat atau jarak.' : '');
