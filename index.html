@@ -527,22 +527,14 @@ input, textarea{font-size:16px!important}
       updateGreeting();
       wrap.appendChild(h);
     } else {
-      var latestUser = -1;
-      for (var j = c.msgs.length - 1; j >= 0; j--){
-        if (c.msgs[j].role === 'user'){ latestUser = j; break; }
-      }
-      if (latestUser >= 0){
-        addUser(c.msgs[latestUser]);
-        for (var k = latestUser + 1; k < c.msgs.length; k++){
-          if (c.msgs[k].role === 'model'){
-            addBot(c.msgs[k], !!animateLastBot && k === c.msgs.length - 1);
-            break;
-          }
-        }
+      for (var j = 0; j < c.msgs.length; j++){
+        if (c.msgs[j].role === 'user') addUser(c.msgs[j]);
+        else if (c.msgs[j].role === 'model') addBot(c.msgs[j], !!animateLastBot && j === c.msgs.length - 1);
       }
     }
     renderSide();
-    var latestQuestion = wrap.querySelector('.msg.user');
+    var questions = wrap.querySelectorAll('.msg.user');
+    var latestQuestion = questions.length ? questions[questions.length - 1] : null;
     if (latestQuestion){
       var questionTop = latestQuestion.getBoundingClientRect().top;
       var chatTop = chatEl.getBoundingClientRect().top;
