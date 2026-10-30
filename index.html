@@ -456,16 +456,37 @@ input, textarea{font-size:16px!important}
     });
   }
 
+  var lastGreeting = '';
   function updateGreeting(){
     var hourText = new Intl.DateTimeFormat('en-GB', {
       timeZone:'Asia/Jakarta', hour:'2-digit', hourCycle:'h23'
     }).format(new Date());
     var hour = Number(hourText);
-    var period = hour >= 4 && hour < 11 ? 'Pagi'
-      : hour >= 11 && hour < 15 ? 'Siang'
-      : hour >= 15 && hour < 18 ? 'Sore' : 'Malam';
+    var period = hour >= 4 && hour < 11 ? 'pagi'
+      : hour >= 11 && hour < 15 ? 'siang'
+      : hour >= 15 && hour < 18 ? 'sore' : 'malam';
+    var greetings = [
+      'Lagi sibuk apa hari ini?',
+      'Bagaimana aktivitasmu ' + period + ' ini?',
+      'Ada cerita menarik hari ini?',
+      'Mau mencari tahu sesuatu yang baru?',
+      'Apa yang bisa kita kerjakan bersama hari ini?',
+      'Ada hal yang sedang kamu pikirkan?',
+      'Siap membantu. Mau mulai dari mana?',
+      'Hari ini ingin ngobrol tentang apa?',
+      'Punya rencana menarik untuk hari ini?',
+      'Butuh bantuan menyelesaikan sesuatu?',
+      'Apa kabar? Semoga harimu menyenangkan.',
+      'Ada pertanyaan yang ingin kamu pecahkan?'
+    ];
     var greeting = $('greeting');
-    if (greeting) greeting.textContent = 'Halo, Selamat ' + period;
+    if (!greeting) return;
+    var next = lastGreeting;
+    while (greetings.length > 1 && next === lastGreeting){
+      next = greetings[Math.floor(Math.random() * greetings.length)];
+    }
+    lastGreeting = next;
+    greeting.textContent = next;
   }
 
   function render(){
@@ -751,7 +772,7 @@ input, textarea{font-size:16px!important}
 
   $('brand').innerHTML = logo(30) + '<span>martaedhyx</span>';
   render();
-  setInterval(updateGreeting, 60000);
+  setInterval(updateGreeting, 12000);
   if (!cfg.key) openSettings();
 })();
 </script>
