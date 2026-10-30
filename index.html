@@ -426,7 +426,7 @@ input, textarea{font-size:16px!important}
             pos = Math.min(pos + 12, raw.length);
             s.textContent = raw.slice(0, pos);
             if (pos < raw.length) setTimeout(reveal, 16);
-            else { s.innerHTML = md(raw); enhanceMarkdown(s); }
+            else { s.innerHTML = md(raw); enhanceMarkdown(s); focusLatestExchange(); }
           })();
         } else { s.innerHTML = md(p.text); enhanceMarkdown(s); }
       }
@@ -516,6 +516,22 @@ input, textarea{font-size:16px!important}
     greeting.textContent = next;
   }
 
+  function focusLatestExchange(){
+    function applyFocus(){
+      var questions = wrap.querySelectorAll('.msg.user');
+      var latestQuestion = questions.length ? questions[questions.length - 1] : null;
+      if (!latestQuestion) return;
+      var questionTop = latestQuestion.getBoundingClientRect().top;
+      var chatTop = chatEl.getBoundingClientRect().top;
+      chatEl.scrollTop += questionTop - chatTop - 8;
+    }
+    requestAnimationFrame(function(){
+      applyFocus();
+      setTimeout(applyFocus, 100);
+      setTimeout(applyFocus, 350);
+    });
+  }
+
   function render(animateLastBot){
     var c = getChat();
     $('modelLabel').textContent = '';
@@ -533,13 +549,8 @@ input, textarea{font-size:16px!important}
       }
     }
     renderSide();
-    var questions = wrap.querySelectorAll('.msg.user');
-    var latestQuestion = questions.length ? questions[questions.length - 1] : null;
-    if (latestQuestion){
-      var questionTop = latestQuestion.getBoundingClientRect().top;
-      var chatTop = chatEl.getBoundingClientRect().top;
-      chatEl.scrollTop += questionTop - chatTop - 8;
-    } else chatEl.scrollTop = 0;
+    if (c && c.msgs.length) focusLatestExchange();
+    else chatEl.scrollTop = 0;
   }
 
   /* ---------- lampiran ---------- */
