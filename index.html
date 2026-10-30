@@ -641,10 +641,15 @@ input, textarea{font-size:16px!important}
   }
 
   /* ---------- kirim ---------- */
-  function errorText(status, msg){
+  function shouldSearchWeb(q){
+    var s = String(q || '').toLowerCase();
+    return /\b(sekarang|terbaru|terkini|hari ini|kemarin|minggu ini|bulan ini|tahun ini|update|berita|harga|tarif|biaya|kurs|nilai tukar|jadwal|skor|hasil pertandingan|cuaca|prakiraan|alamat|lokasi|jam buka|peraturan terbaru|undang-undang terbaru|regulasi terbaru|rilis terbaru|versi terbaru|sumber|referensi|riset|penelitian terbaru|bandingkan|telusuri|cari di internet|cari di web)\b/.test(s) || /https?:\/\//i.test(s);
+  }
+
+  function errorText(status, msg, webActive){
     var hint = imageMode ? ' Model gambar sering butuh akun berbayar. Cek nama model gambar di Pengaturan.' : '';
     if (status === 400 && /API key/i.test(msg)) return 'API key tidak valid. Periksa lagi di Pengaturan.';
-    if (!imageMode && (locOn || searchOn) && (status === 400 || status === 403 || status === 429)) hint = ' Fitur Lokasi atau Cari di web mungkin tidak tersedia di akun gratis. Coba matikan salah satunya.';
+    if (!imageMode && (locOn || searchOn || webActive) && (status === 400 || status === 403 || status === 429)) hint = ' Fitur Lokasi atau pencarian web mungkin tidak tersedia pada kuota atau akses API saat ini. Coba lagi nanti atau periksa akses API.';
     if (status === 403) return 'API key ditolak atau tidak punya akses ke model ini.' + hint;
     if (status === 404) return 'Model tidak ditemukan. Ganti nama model di Pengaturan.' + hint;
     if (status === 413) return 'Lampiran terlalu besar. Kurangi ukuran file atau buka Chat baru.';
@@ -664,6 +669,7 @@ input, textarea{font-size:16px!important}
     if (imageMode && !q){ addErr('Tulis dulu gambar apa yang mau dibuat.'); return; }
     busy = true; sendBtn.disabled = true;
     var files = pending, asImage = imageMode;
+    var useWeb = !asImage && (searchOn || shouldSearchWeb(q));
     pending = []; renderChips();
     text.value = ''; text.style.height = 'auto';
 
@@ -685,7 +691,7 @@ input, textarea{font-size:16px!important}
       if (files.length) ph.push(['Membaca lampiran...', 1800, 'analyze'], ['Menganalisis lampiran...', 3000, 'analyze']);
       ph.push(['Berpikir...', 1800, 'think']);
       if (locOn) ph.push(['Memeriksa lokasimu...', 2200, 'search']);
-      if (searchOn) ph.push(['Menelusuri web...', 3500, 'search'], ['Membaca hasil...', 2500, 'analyze']);
+      if (useWeb) ph.push(['Menelusuri web...', 3500, 'search'], ['Membaca dan membandingkan sumber...', 2500, 'analyze']);
       ph.push(['Menulis jawaban...', 0, 'write']);
     }
     (function showPhase(){
@@ -695,14 +701,14 @@ input, textarea{font-size:16px!important}
     chatEl.scrollTop = chatEl.scrollHeight;
     if (locOn && !asImage){ var r2 = await getLoc(); if (r2.lat !== undefined) loc = r2; }
     var model = asImage ? cfg.imgmodel : cfg.model;
-    var styleGuide = '\n\nGaya jawaban: jawab seperti asisten analitis yang sistematis, tenang, dan langsung ke inti. Untuk pertanyaan sederhana, jawab singkat. Untuk pertanyaan kompleks, susun jawaban dengan judul atau poin bernomor bila membantu; jelaskan langkah penting, fakta, asumsi, dan kesimpulan secara ringkas. Tampilkan alasan atau ringkasan penalaran yang bisa dipahami, bukan penalaran internal tersembunyi. Gunakan bahasa pengguna, hindari pengulangan, basa-basi panjang, dan klaim yang tidak pasti.';
+    var styleGuide = '\n\nGaya jawaban: jawab seperti asisten analitis yang sistematis, tenang, dan langsung ke inti. Untuk pertanyaan sederhana, jawab singkat. Untuk pertanyaan kompleks, susun jawaban dengan judul atau poin bernomor bila membantu; jelaskan langkah penting, fakta, asumsi, dan kesimpulan secara ringkas. Tampilkan alasan atau ringkasan penalaran yang bisa dipahami, bukan penalaran internal tersembunyi. Gunakan bahasa pengguna, hindari pengulangan, basa-basi panjang, dan klaim yang tidak pasti.\n\nRiset dan pencarian: jika alat web tersedia dan pertanyaan membutuhkan informasi terbaru, fakta yang dapat berubah, verifikasi, atau riset, lakukan penelusuran sebelum menjawab. Pecah pertanyaan kompleks menjadi beberapa subpertanyaan atau sudut pencarian yang relevan. Gunakan hasil pencarian untuk menemukan halaman sumber, lalu baca halaman penting secara lebih mendalam bila alat konteks URL tersedia. Utamakan sumber primer/resmi dan sumber independen yang kredibel; bandingkan beberapa sumber untuk klaim penting. Perhatikan tanggal publikasi dan tanggal kejadian, bedakan fakta, perkiraan, dan opini, serta jelaskan bila sumber bertentangan atau bukti belum cukup. Sertakan tautan sumber yang benar-benar digunakan. Jangan mengarang sumber, kutipan, angka, atau kepastian. Untuk pertanyaan sederhana dan pengetahuan yang stabil, jangan memaksakan pencarian.';
     var sysText = cfg.sys + styleGuide + (locOn && loc ? '\nLokasi GPS pengguna saat ini: ' + loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5) + ' (akurasi sekitar ' + loc.acc + ' m). Pakai ini bila pertanyaan menyangkut tempat atau jarak.' : '');
     var body = asImage
       ? { contents:[{ role:'user', parts:parts }], generationConfig:{ responseModalities:['TEXT','IMAGE'] } }
       : { system_instruction:{ parts:[{ text: sysText }] }, contents: toContents(c.msgs) };
     if (!asImage){
       var tools = [];
-      if (searchOn) tools.push({ google_search:{} });
+      if (useWeb) tools.push({ google_search:{} }, { url_context:{} });
       if (locOn && loc){ tools.push({ googleMaps:{} }); body.toolConfig = { retrievalConfig:{ latLng:{ latitude:loc.lat, longitude:loc.lng } } }; }
       if (tools.length) body.tools = tools;
     }
@@ -714,7 +720,7 @@ input, textarea{font-size:16px!important}
       });
       var data = await res.json().catch(function(){ return {}; });
       if (!res.ok){
-        fail(errorText(res.status, (data.error && data.error.message) || ''));
+        fail(errorText(res.status, (data.error && data.error.message) || '', useWeb));
       } else {
         var got = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
         var keep = (got || []).filter(function(p){ return !p.thought && (p.text || p.inlineData); });
