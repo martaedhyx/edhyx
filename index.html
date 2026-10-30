@@ -441,12 +441,12 @@ dialog input,dialog textarea{width:100%;background:var(--bg);color:var(--ink);bo
 
   function render(){
     var c = getChat();
-    $('modelLabel').textContent = cfg.model;
+    $('modelLabel').textContent = '';
     $('title').textContent = c ? c.title : 'Chat baru';
     wrap.innerHTML = '';
     if (!c || !c.msgs.length){
       var h = el('div','hello');
-      h.innerHTML = logo(36) + '<h1>Halo, ada yang bisa dibantu?</h1><p>' + (cfg.key ? 'Tulis pertanyaan, atau tekan + untuk melampirkan file.' : 'Buka Pengaturan dan isi API key dulu.') + '</p>';
+      h.innerHTML = logo(36) + '<h1>Halo, ada yang bisa dibantu?</h1>';
       wrap.appendChild(h);
     } else {
       c.msgs.forEach(function(m){ if (m.role === 'user') addUser(m); else addBot(m); });
